@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::{self, Burn, MintTo, SetAuthority, Transfer};
+use anchor_spl::token::{self, Burn, MintTo, SetAuthority, Transfer, TokenAccount, Token};
 
-declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
+declare_id!("7Hqh6QVDRomntKJYwvQNH2xxwG1AfRxsyeK3E1r1yxjC");
 
 #[program]
 pub mod mymoneydapp {
@@ -38,44 +38,47 @@ pub enum AuthorityType {
 
 #[derive(Accounts)]
 pub struct ProxyTransfer<'info> {
-    #[account(signer)]
-    pub authority: AccountInfo<'info>,
     #[account(mut)]
-    pub from:AccountInfo<'info>,
+    pub authority: Signer<'info>,
     #[account(mut)]
-    pub to: AccountInfo<'info>,
+    pub from:Box<Account<'info, TokenAccount>>,
+    #[account(mut)]
+    pub to: Box<Account<'info, TokenAccount>>,
     pub token_program: AccountInfo<'info>,
 }
 
 #[derive(Accounts)]
 pub struct ProxyMintTo<'info> {
-    #[account(signer)]
-    pub authority: AccountInfo<'info>,
+    #[account(mut)]
+    pub authority: Signer<'info>,
     #[account(mut)]
     pub mint: AccountInfo<'info>,
     #[account(mut)]
     pub to: AccountInfo<'info>,
-    pub token_program: AccountInfo<'info>,
+    #[account(address = token::ID)]
+    pub token_program: Program<'info, Token>,
 }
 
 #[derive(Accounts)]
 pub struct ProxyBurn<'info> {
-    #[account(signer)]
-    pub authority: AccountInfo<'info>,
+    #[account(mut)]
+    pub authority: Signer<'info>,
     #[account(mut)]
     pub mint: AccountInfo<'info>,
     #[account(mut)]
     pub to: AccountInfo<'info>,
-    pub token_program: AccountInfo<'info>,
+    #[account(address = token::ID)]
+    pub token_program: Program<'info, Token>,
 }
 
 #[derive(Accounts)]
 pub struct ProxySetAuthority<'info> {
-    #[account(signer)]
-    pub current_authority: AccountInfo<'info>,
+    #[account(mut)]
+    pub current_authority: Signer<'info>,
     #[account(mut)]
     pub account_or_mint: AccountInfo<'info>,
-    pub token_program: AccountInfo<'info>,
+    #[account(address = token::ID)]
+    pub token_program: Program<'info, Token>,
 }
 
 impl<'a, 'b, 'c, 'info> From<&mut ProxyTransfer<'info>>
@@ -83,11 +86,11 @@ impl<'a, 'b, 'c, 'info> From<&mut ProxyTransfer<'info>>
 {
     fn from(accounts: &mut ProxyTransfer<'info>) -> CpiContext<'a, 'b, 'c, 'info, Transfer<'info>> {
         let cpi_accounts = Transfer {
-            from: accounts.from.clone(),
-            to: accounts.to.clone(),
-            authority: accounts.authority.clone(),
+            from: accounts.from.to_account_info().clone(),
+            to: accounts.to.to_account_info().clone(),
+            authority: accounts.authority.to_account_info().clone(),
         };
-        let cpi_program = accounts.token_program.clone();
+        let cpi_program = accounts.token_program.to_account_info().clone();
         CpiContext::new(cpi_program, cpi_accounts)
     }
 }
@@ -99,9 +102,9 @@ impl<'a, 'b, 'c, 'info> From<&mut ProxyMintTo<'info>>
         let cpi_accounts = MintTo {
             mint: accounts.mint.clone(),
             to: accounts.to.clone(),
-            authority: accounts.authority.clone(),
+            authority: accounts.authority.to_account_info().clone(),
         };
-        let cpi_program = accounts.token_program.clone();
+        let cpi_program = accounts.token_program.to_account_info().clone();
         CpiContext::new(cpi_program, cpi_accounts)
     }
 }
@@ -111,9 +114,9 @@ impl<'a, 'b, 'c, 'info> From<&mut ProxyBurn<'info>> for CpiContext<'a, 'b, 'c, '
         let cpi_accounts = Burn {
             mint: accounts.mint.clone(),
             to: accounts.to.clone(),
-            authority: accounts.authority.clone(),
+            authority: accounts.authority.to_account_info().clone(),
         };
-        let cpi_program = accounts.token_program.clone();
+        let cpi_program = accounts.token_program.to_account_info().clone();
         CpiContext::new(cpi_program, cpi_accounts)
     }
 }
@@ -126,9 +129,9 @@ impl<'a, 'b, 'c, 'info> From<&mut ProxySetAuthority<'info>>
     ) -> CpiContext<'a, 'b, 'c, 'info, SetAuthority<'info>> {
         let cpi_accounts = SetAuthority {
             account_or_mint: accounts.account_or_mint.clone(),
-            current_authority: accounts.current_authority.clone(),
+            current_authority: accounts.current_authority.to_account_info().clone(),
         };
-        let cpi_program = accounts.token_program.clone();
+        let cpi_program = accounts.token_program.to_account_info().clone();
         CpiContext::new(cpi_program, cpi_accounts)
     }
 }
