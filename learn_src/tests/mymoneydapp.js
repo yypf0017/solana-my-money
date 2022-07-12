@@ -2,7 +2,7 @@ const anchor = require("@project-serum/anchor");
 const assert = require("assert");
 
 describe('mymoneydapp', () => {
-  const provider = anchor.Provider.local();
+  const provider = anchor.Provider.env();
 
   // Configure the client to use the local cluster.
   anchor.setProvider(provider);
@@ -16,7 +16,7 @@ describe('mymoneydapp', () => {
   it("Initializes test state", async () => {
     mint = await createMint(provider);
     from = await createTokenAccount(provider, mint, provider.wallet.publicKey);
-    to = await createTokenAccount(provider, mint, new web3.PublicKey('9GUCWHLm9puMj7MAeGyRbAkHChBDmVGgo9gJ7Sr2nx9v'));
+    to = await createTokenAccount(provider, mint, provider.wallet.publicKey);
     console.log(to);
   });
 
